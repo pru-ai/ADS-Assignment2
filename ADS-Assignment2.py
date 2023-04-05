@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import stats
-import scipy.stats as sc
+from matplotlib.ticker import FuncFormatter
 
 
 def read_csv(filename):
@@ -44,18 +44,11 @@ df_india = country_wise_data("India")
 df_usa = country_wise_data("United States")
 df_sa = country_wise_data("South Africa")
 
-df_compare_brazil_features = df_brazil[["CO2 emissions from liquid fuel"
-                                        r" consumption (kt)",
-                                        "Urban population (% of total"
-                                        r" population)",
-                                        "Agricultural land (sq. km)",
-                                        "Agriculture, forestry, and fishing,"
-                                        r" value added (% of GDP)",
-                                        "Foreign direct investment,"
-                                        r" net inflows (% of GDP)"]]
-
 # Statistics
-df_compare_brazil_features.describe()
+df_brazil.describe()
+df_india.describe()
+df_usa.describe()
+df_sa.describe()
 
 br_low, br_high = stats.bootstrap(df_brazil["Urban population"
                                             " (% of total population)"],
@@ -80,22 +73,53 @@ country_urban_pop_interval = {'Brazil': (br_low, br_high),
 
 print(country_urban_pop_interval)
 
-corr_matrix = df_compare_brazil_features.corr()
-plt.figure(figsize = (8, 5))
-ax = sns.heatmap(corr_matrix, annot = True)
-ax.set_title('Brazil', fontdict = {'fontsize': 12}, pad = 12)
-ax.set(xlabel = "", ylabel = "")
 
-indicator = "Population in urban agglomerations of more than 1 million (% of total population)"
-countries = ['Brazil', 'India', 'United States', 'South Africa']
-urban_agglo = year_data[year_data['Indicator Name'].isin([indicator])]
-
-urban_agglo = urban_agglo[urban_agglo['Country Name'].isin(countries)]
-urban_agglo_t = urban_agglo.T
-
-#urban_agglo.plot(x='Country Name',
-##        kind='bar',
-#        stacked=False,
-#        title='Urban Population')
+indicators = ["CO2 emissions from liquid fuel consumption (kt)",
+              "Urban population (% of total population)",
+              "Agricultural land (sq. km)",
+              "Agriculture, forestry, and fishing, value added (% of GDP)",
+              "Foreign direct investment, net inflows (% of GDP)"]
 
 
+def heat_map(country):
+    df_features = country_wise_data(country)[indicators]
+    corr_matrix = df_features.corr()
+    plt.figure(figsize = (8, 5))
+    ax = sns.heatmap(corr_matrix, annot = True)
+    ax.set_title(country, fontdict = {'fontsize': 12}, pad = 12)
+    ax.set(xlabel = "", ylabel = "")
+    return
+
+
+heat_map("Brazil")
+heat_map("India")
+heat_map("South Africa")
+
+
+cntrys = ['Brazil', 'India', 'United States', 'South Africa']
+
+
+def convert_to_millions(num):
+    'The two args are the value and tick position'
+    return '%1.1fM' % (num * 1e-6)
+
+
+def time_series(indicator):
+    df_agg = year_data[year_data['Indicator Name'].isin([indicator])]
+    df_agg = df_agg[df_agg['Country Name'].isin(cntrys)].reset_index(drop=True)
+    df_agg_t = df_agg.T
+    df_agg_t = df_agg_t.drop('Indicator Name')
+    df_agg_t.columns = df_agg_t.iloc[0]
+    df_agg_t = df_agg_t.iloc[1:]
+    df_agg_t.index = pd.to_datetime(df_agg_t.index)
+    formatter = FuncFormatter(convert_to_millions)
+    fig, ax = plt.subplots(figsize = (16, 9))
+    ax.yaxis.set_major_formatter(formatter)
+    ax.plot(df_agg_t)
+    ax.legend(df_agg_t.columns)
+    ax.set_title(indicator)
+    return
+
+
+time_series("Urban population")
+time_series("CO2 emissions from liquid fuel consumption (kt)")
