@@ -164,7 +164,7 @@ def time_series(indicator):
     df_agg_t = df_agg_t.iloc[1:]
     df_agg_t.index = pd.to_datetime(df_agg_t.index)
     formatter = FuncFormatter(convert_to_millions)
-    fig, ax = plt.subplots(figsize = (16, 9))
+    fig, ax = plt.subplots(figsize = (12, 8))
     ax.yaxis.set_major_formatter(formatter)
     ax.plot(df_agg_t)
     ax.legend(df_agg_t.columns)
